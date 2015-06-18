@@ -15,15 +15,15 @@ import java.util.ArrayList;
 /**
  * Created by jgietl on 6/17/15.
  */
-public class SpotifyArtistAdapter extends ArrayAdapter<SpotifyArtistDetail> {
-    public SpotifyArtistAdapter(Context context, ArrayList<SpotifyArtistDetail> artistDetails) {
+public class SpotifyArtistAdapter extends ArrayAdapter<SpotifyArtist> {
+    public SpotifyArtistAdapter(Context context, ArrayList<SpotifyArtist> artistDetails) {
         super(context, 0, artistDetails);
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
-        SpotifyArtistDetail artistDetail = getItem(position);
+        SpotifyArtist artistDetail = getItem(position);
 
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item_artist_result, parent, false);

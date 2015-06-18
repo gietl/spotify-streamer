@@ -1,5 +1,7 @@
 package com.jaygietl.android.spotifystreamer;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -30,12 +33,18 @@ import kaaes.spotify.webapi.android.models.Image;
  */
 public class ArtistSearchFragment extends Fragment {
 
-    //private ArrayAdapter<String> mArtistSearchAdapter;
     private SpotifyArtistAdapter mArtistSearchAdapter;
     private EditText mEdit;
-    //private ArrayList<SpotifyArtistDetail> artistDetails = new ArrayList<SpotifyArtistDetail>();
+
 
     public ArtistSearchFragment() {
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // retain this fragment
+        setRetainInstance(true);
     }
 
     @Override
@@ -49,26 +58,22 @@ public class ArtistSearchFragment extends Fragment {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 boolean handled = false;
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+
+                    InputMethodManager in = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    in.hideSoftInputFromWindow(v
+                                    .getApplicationWindowToken(),
+                            InputMethodManager.HIDE_NOT_ALWAYS);
+
                     doArtistSearch();
                     handled = true;
+
                 }
                 return handled;
             }
         });
 
-        /*List<String> artistNames = new ArrayList<>();
-        artistNames.add("BossToneS");
-        artistNames.add("Foo Fighters");
-        artistNames.add("Queen");
-        artistNames.add("BossToneS");
-        artistNames.add("Foo Fighters");
-        artistNames.add("Queen");
-        artistNames.add("BossToneS");
-        artistNames.add("Foo Fighters");
-        artistNames.add("Queen");*/
-
         mArtistSearchAdapter = new SpotifyArtistAdapter(
-                getActivity(), new ArrayList<SpotifyArtistDetail>()
+                getActivity(), new ArrayList<SpotifyArtist>()
         );
 
         ListView listView = (ListView) rootView.findViewById(R.id.list_view_artist_result);
@@ -76,11 +81,17 @@ public class ArtistSearchFragment extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                SpotifyArtistDetail artist = mArtistSearchAdapter.getItem(position);
+
+                SpotifyArtist artist = mArtistSearchAdapter.getItem(position);
+
                 Toast.makeText(getActivity(), artist.artistName, Toast.LENGTH_SHORT).show();
-                /*Intent intent = new Intent(getActivity(), DetailActivity.class)
-                        .putExtra(Intent.EXTRA_TEXT, forecast);
-                startActivity(intent);*/
+
+                Intent intent = new Intent(getActivity(), SpotifyArtistDetail.class)
+                        .putExtra("ARTIST_NAME", artist.artistName)
+                        .putExtra("ARTIST_ID", artist.spotifyId);
+
+                startActivity(intent);
+
             }
         });
 
@@ -93,7 +104,7 @@ public class ArtistSearchFragment extends Fragment {
         fetchArtistTask.execute(mEdit.getText().toString());
     }
 
-    public class FetchArtistTask extends AsyncTask<String, Void, ArrayList<SpotifyArtistDetail>> {
+    public class FetchArtistTask extends AsyncTask<String, Void, ArrayList<SpotifyArtist>> {
 
         private final String LOG_TAG = FetchArtistTask.class.getSimpleName();
 
@@ -107,7 +118,7 @@ public class ArtistSearchFragment extends Fragment {
         }*/
 
         @Override
-        protected ArrayList<SpotifyArtistDetail> doInBackground(String... params) {
+        protected ArrayList<SpotifyArtist> doInBackground(String... params) {
 
             if( params.length == 0 ) {
                 return null;
@@ -126,7 +137,7 @@ public class ArtistSearchFragment extends Fragment {
             //Log.d(LOG_TAG, "Looking for Artists with the name: " + artistName);
             ArtistsPager artistsPager = spotify.searchArtists(artistName);
 
-            ArrayList<SpotifyArtistDetail> artistDetails = new ArrayList<SpotifyArtistDetail>();
+            ArrayList<SpotifyArtist> artistDetails = new ArrayList<SpotifyArtist>();
 
             if( artistsPager.artists != null && !artistsPager.artists.items.isEmpty() ) {
 
@@ -140,7 +151,7 @@ public class ArtistSearchFragment extends Fragment {
                         }
                     }
 
-                    SpotifyArtistDetail artistDetail = new SpotifyArtistDetail( artist.name, thumbImageUrl, artist.id );
+                    SpotifyArtist artistDetail = new SpotifyArtist( artist.name, thumbImageUrl, artist.id );
                     artistDetails.add(artistDetail);
 
 
@@ -154,11 +165,11 @@ public class ArtistSearchFragment extends Fragment {
         }
 
         @Override
-        protected void onPostExecute(ArrayList<SpotifyArtistDetail> result) {
+        protected void onPostExecute(ArrayList<SpotifyArtist> result) {
 
             if( result != null && !result.isEmpty() ) {
                 mArtistSearchAdapter.clear();
-                for( SpotifyArtistDetail artistDetail : result ) {
+                for( SpotifyArtist artistDetail : result ) {
                     mArtistSearchAdapter.add(artistDetail);
                 }
             } else {
