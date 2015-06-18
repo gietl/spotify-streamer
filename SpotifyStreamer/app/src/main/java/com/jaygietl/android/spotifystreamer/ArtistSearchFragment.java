@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -23,9 +22,7 @@ import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
+import kaaes.spotify.webapi.android.models.Image;
 
 
 /**
@@ -33,14 +30,13 @@ import retrofit.client.Response;
  */
 public class ArtistSearchFragment extends Fragment {
 
-    private ArrayAdapter<String> mArtistSearchAdapter;
+    //private ArrayAdapter<String> mArtistSearchAdapter;
+    private SpotifyArtistAdapter mArtistSearchAdapter;
     private EditText mEdit;
-    private List<String> artistNames = new ArrayList<String>();
+    //private ArrayList<SpotifyArtistDetail> artistDetails = new ArrayList<SpotifyArtistDetail>();
 
     public ArtistSearchFragment() {
     }
-
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -60,7 +56,7 @@ public class ArtistSearchFragment extends Fragment {
             }
         });
 
-        List<String> artistNames = new ArrayList<>();
+        /*List<String> artistNames = new ArrayList<>();
         artistNames.add("BossToneS");
         artistNames.add("Foo Fighters");
         artistNames.add("Queen");
@@ -69,13 +65,10 @@ public class ArtistSearchFragment extends Fragment {
         artistNames.add("Queen");
         artistNames.add("BossToneS");
         artistNames.add("Foo Fighters");
-        artistNames.add("Queen");
+        artistNames.add("Queen");*/
 
-        mArtistSearchAdapter = new ArrayAdapter<String>(
-                getActivity(),
-                R.layout.list_item_artist_result,
-                R.id.list_item_artist_name_result_textview,
-                new ArrayList<String>()
+        mArtistSearchAdapter = new SpotifyArtistAdapter(
+                getActivity(), new ArrayList<SpotifyArtistDetail>()
         );
 
         ListView listView = (ListView) rootView.findViewById(R.id.list_view_artist_result);
@@ -83,8 +76,8 @@ public class ArtistSearchFragment extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String artist = mArtistSearchAdapter.getItem(position);
-                Toast.makeText(getActivity(), artist, Toast.LENGTH_SHORT).show();
+                SpotifyArtistDetail artist = mArtistSearchAdapter.getItem(position);
+                Toast.makeText(getActivity(), artist.artistName, Toast.LENGTH_SHORT).show();
                 /*Intent intent = new Intent(getActivity(), DetailActivity.class)
                         .putExtra(Intent.EXTRA_TEXT, forecast);
                 startActivity(intent);*/
@@ -100,12 +93,21 @@ public class ArtistSearchFragment extends Fragment {
         fetchArtistTask.execute(mEdit.getText().toString());
     }
 
-    public class FetchArtistTask extends AsyncTask<String, Void, List<String>> {
+    public class FetchArtistTask extends AsyncTask<String, Void, ArrayList<SpotifyArtistDetail>> {
 
         private final String LOG_TAG = FetchArtistTask.class.getSimpleName();
 
+        /*private ProgressDialog dialog = new ProgressDialog(getActivity());
+
         @Override
-        protected List<String> doInBackground(String... params) {
+        protected void onPreExecute() {
+            super.onPreExecute();
+            this.dialog.setMessage("Fetching results...");
+            this.dialog.show();
+        }*/
+
+        @Override
+        protected ArrayList<SpotifyArtistDetail> doInBackground(String... params) {
 
             if( params.length == 0 ) {
                 return null;
@@ -122,52 +124,42 @@ public class ArtistSearchFragment extends Fragment {
             final String artistName = params[0];
 
             //Log.d(LOG_TAG, "Looking for Artists with the name: " + artistName);
+            ArtistsPager artistsPager = spotify.searchArtists(artistName);
 
-            spotify.searchArtists(artistName, new Callback<ArtistsPager>() {
-                @Override
-                public void success(ArtistsPager artistsPager, Response response) {
-                    if( artistsPager.artists != null ) {
+            ArrayList<SpotifyArtistDetail> artistDetails = new ArrayList<SpotifyArtistDetail>();
 
-                        if( artistNames != null ) {
-                            artistNames.clear();
-                        } else {
-                            artistNames = new ArrayList<String>();
+            if( artistsPager.artists != null && !artistsPager.artists.items.isEmpty() ) {
+
+                for( Artist artist : artistsPager.artists.items ) {
+
+                    List<Image> artistImages = artist.images;
+                    String thumbImageUrl = "";
+                    for( Image image : artistImages ) {
+                        if( image.width.equals(64) ) {
+                            thumbImageUrl = image.url;
                         }
-
-                        for( Artist artist : artistsPager.artists.items ) {
-                            artistNames.add( artist.name + " " + artist.id );
-                        }
-
                     }
+
+                    SpotifyArtistDetail artistDetail = new SpotifyArtistDetail( artist.name, thumbImageUrl, artist.id );
+                    artistDetails.add(artistDetail);
+
+
                 }
 
-                @Override
-                public void failure(RetrofitError error) {
+            } else {
+                return null;
+            }
 
-                }
-            });
-
-            /*spotify.getAlbum("2dIGnmEIy1WZIcZCFSj6i8", new Callback<Album>() {
-                @Override
-                public void success(Album album, Response response) {
-                    Log.d("Album success", album.name);
-                }
-
-                @Override
-                public void failure(RetrofitError error) {
-                    Log.d("Album failure", error.toString());
-                }
-            });*/
-
-            return artistNames;
+            return artistDetails;
         }
 
         @Override
-        protected void onPostExecute(List<String> result) {
+        protected void onPostExecute(ArrayList<SpotifyArtistDetail> result) {
+
             if( result != null && !result.isEmpty() ) {
                 mArtistSearchAdapter.clear();
-                for( String dayForecastStr : result ) {
-                    mArtistSearchAdapter.add(dayForecastStr);
+                for( SpotifyArtistDetail artistDetail : result ) {
+                    mArtistSearchAdapter.add(artistDetail);
                 }
             } else {
                 Toast.makeText(getActivity(), "We didn't find anything that matched. Try something else.", Toast.LENGTH_SHORT).show();
