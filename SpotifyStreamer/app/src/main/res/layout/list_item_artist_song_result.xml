@@ -10,6 +10,8 @@
     <ImageView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:minWidth="64dp"
+        android:minHeight="64dp"
         android:id="@+id/list_item_artist_album_image_result_imageview"
         android:src="@drawable/abc_btn_rating_star_on_mtrl_alpha"
         />
