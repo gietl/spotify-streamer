@@ -10,7 +10,7 @@ import android.view.MenuItem;
 
 public class SpotifyArtistDetail extends ActionBarActivity {
 
-    private String mArtistNameStr;
+    private SpotifyArtist mArtist;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,13 +18,13 @@ public class SpotifyArtistDetail extends ActionBarActivity {
         setContentView(R.layout.activity_spotify_artist_detail);
 
         Intent intent = getIntent();
-        if( intent != null && intent.hasExtra("ARTIST_NAME") ) {
-            mArtistNameStr = intent.getStringExtra("ARTIST_NAME");
-            if( mArtistNameStr != null ) {
+        if( intent != null && intent.hasExtra("artist") ) {
+            mArtist = intent.getParcelableExtra("artist");
+            if( mArtist != null ) {
 
                 ActionBar actionBar = getSupportActionBar();
                 if( actionBar != null ) {
-                    actionBar.setSubtitle(mArtistNameStr);
+                    actionBar.setSubtitle(mArtist.artistName);
                 }
 
             }

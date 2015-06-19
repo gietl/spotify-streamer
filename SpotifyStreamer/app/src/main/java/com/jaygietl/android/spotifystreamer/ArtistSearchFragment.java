@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,21 +35,43 @@ public class ArtistSearchFragment extends Fragment {
     private SpotifyArtistAdapter mArtistSearchAdapter;
     private EditText mEdit;
 
+    private ArrayList<SpotifyArtist> mArtistDetails;
+    private String mSearchString;
+
 
     public ArtistSearchFragment() {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // retain this fragment
-        setRetainInstance(true);
+    public void onSaveInstanceState(Bundle outState) {
+
+        super.onSaveInstanceState(outState);
+
+        outState.putParcelableArrayList("artists", mArtistDetails);
+        outState.putString("search_value", mEdit.getText().toString());
+
+        //getToast("onSaveInstanceState");
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        //getToast("onCreateView");
+
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
+        if( savedInstanceState != null ) {
+
+            if( savedInstanceState .getParcelableArrayList("artists") != null ) {
+                mArtistDetails = savedInstanceState.getParcelableArrayList("artists");
+            }
+            if( savedInstanceState .getString("search_value") != null ) {
+                mSearchString =  savedInstanceState.getString("search_value");
+            }
+
+            //setupAdapter();
+        }
 
         mEdit = (EditText) rootView.findViewById(R.id.edit_text_artist_search);
         mEdit.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -63,7 +84,7 @@ public class ArtistSearchFragment extends Fragment {
                     in.hideSoftInputFromWindow(v
                                     .getApplicationWindowToken(),
                             InputMethodManager.HIDE_NOT_ALWAYS);
-
+                    mSearchString = mEdit.getText().toString();
                     doArtistSearch();
                     handled = true;
 
@@ -72,9 +93,7 @@ public class ArtistSearchFragment extends Fragment {
             }
         });
 
-        mArtistSearchAdapter = new SpotifyArtistAdapter(
-                getActivity(), new ArrayList<SpotifyArtist>()
-        );
+        setupAdapter();
 
         ListView listView = (ListView) rootView.findViewById(R.id.list_view_artist_result);
         listView.setAdapter(mArtistSearchAdapter);
@@ -84,11 +103,8 @@ public class ArtistSearchFragment extends Fragment {
 
                 SpotifyArtist artist = mArtistSearchAdapter.getItem(position);
 
-                Toast.makeText(getActivity(), artist.artistName, Toast.LENGTH_SHORT).show();
-
                 Intent intent = new Intent(getActivity(), SpotifyArtistDetail.class)
-                        .putExtra("ARTIST_NAME", artist.artistName)
-                        .putExtra("ARTIST_ID", artist.spotifyId);
+                        .putExtra("artist", artist);
 
                 startActivity(intent);
 
@@ -98,24 +114,27 @@ public class ArtistSearchFragment extends Fragment {
         return rootView;
     }
 
-    private void doArtistSearch(){
-        Log.v("[EditText]", mEdit.getText().toString());
+    private void setupAdapter() {
+
+        if( mArtistDetails == null ) {
+            mArtistDetails = new ArrayList<>();
+        }
+
+        mArtistSearchAdapter = new SpotifyArtistAdapter(
+                getActivity(), mArtistDetails
+        );
+    }
+
+    private void doArtistSearch() {
+        //Log.v("[EditText]", mEdit.getText().toString());
         FetchArtistTask fetchArtistTask = new FetchArtistTask();
-        fetchArtistTask.execute(mEdit.getText().toString());
+        String searchString = mSearchString;
+        fetchArtistTask.execute(searchString);
     }
 
     public class FetchArtistTask extends AsyncTask<String, Void, ArrayList<SpotifyArtist>> {
 
         private final String LOG_TAG = FetchArtistTask.class.getSimpleName();
-
-        /*private ProgressDialog dialog = new ProgressDialog(getActivity());
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            this.dialog.setMessage("Fetching results...");
-            this.dialog.show();
-        }*/
 
         @Override
         protected ArrayList<SpotifyArtist> doInBackground(String... params) {
@@ -137,7 +156,11 @@ public class ArtistSearchFragment extends Fragment {
             //Log.d(LOG_TAG, "Looking for Artists with the name: " + artistName);
             ArtistsPager artistsPager = spotify.searchArtists(artistName);
 
-            ArrayList<SpotifyArtist> artistDetails = new ArrayList<SpotifyArtist>();
+            if( mArtistDetails != null ) {
+                mArtistDetails.clear();
+            } else {
+                mArtistDetails = new ArrayList<SpotifyArtist>();
+            }
 
             if( artistsPager.artists != null && !artistsPager.artists.items.isEmpty() ) {
 
@@ -152,7 +175,7 @@ public class ArtistSearchFragment extends Fragment {
                     }
 
                     SpotifyArtist artistDetail = new SpotifyArtist( artist.name, thumbImageUrl, artist.id );
-                    artistDetails.add(artistDetail);
+                    mArtistDetails.add(artistDetail);
 
 
                 }
@@ -161,7 +184,7 @@ public class ArtistSearchFragment extends Fragment {
                 return null;
             }
 
-            return artistDetails;
+            return new ArrayList<>(mArtistDetails);
         }
 
         @Override
@@ -173,10 +196,47 @@ public class ArtistSearchFragment extends Fragment {
                     mArtistSearchAdapter.add(artistDetail);
                 }
             } else {
-                Toast.makeText(getActivity(), "We didn't find anything that matched. Try something else.", Toast.LENGTH_SHORT).show();
+
+                getToast("We didn't find anything that matched. Try something else.");
+
             }
         }
 
 
+    }
+
+    /*@Override
+    public void onPause() {
+        super.onPause();
+        getToast("onPause");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        getToast("onResume");
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        getToast("onStop");
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        getToast("onStart");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        getToast("onDestroy");
+    }*/
+
+    private void getToast(String message) {
+        Context context = getActivity();
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
     }
 }

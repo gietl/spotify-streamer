@@ -14,10 +14,18 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
     }
 
+    /*@Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("message", "This is being saved on rotate");
+    }
+
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-    }
+
+        Toast.makeText(this, savedInstanceState.getString("message"), Toast.LENGTH_LONG).show();
+    }*/
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

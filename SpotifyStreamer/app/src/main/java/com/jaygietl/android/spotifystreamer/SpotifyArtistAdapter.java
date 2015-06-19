@@ -16,6 +16,7 @@ import java.util.ArrayList;
  * Created by jgietl on 6/17/15.
  */
 public class SpotifyArtistAdapter extends ArrayAdapter<SpotifyArtist> {
+
     public SpotifyArtistAdapter(Context context, ArrayList<SpotifyArtist> artistDetails) {
         super(context, 0, artistDetails);
     }
@@ -40,4 +41,5 @@ public class SpotifyArtistAdapter extends ArrayAdapter<SpotifyArtist> {
         return convertView;
 
     }
+
 }
