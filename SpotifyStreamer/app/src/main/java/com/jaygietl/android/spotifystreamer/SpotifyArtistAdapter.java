@@ -32,7 +32,7 @@ public class SpotifyArtistAdapter extends ArrayAdapter<SpotifyArtist> {
 
         ImageView artistImage = (ImageView) convertView.findViewById(R.id.list_item_artist_image_result_imageview);
         if( artistDetail.imageUrl != null && !"".equals(artistDetail.imageUrl) ) {
-            Picasso.with(getContext()).load(artistDetail.imageUrl).into(artistImage);
+            Picasso.with(getContext()).load(artistDetail.imageUrl).resize(120, 120).into(artistImage);
         }
 
         TextView artistName = (TextView) convertView.findViewById(R.id.list_item_artist_name_result_textview);

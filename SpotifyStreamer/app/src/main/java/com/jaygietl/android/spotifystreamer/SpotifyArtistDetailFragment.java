@@ -2,8 +2,10 @@ package com.jaygietl.android.spotifystreamer;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -82,7 +84,7 @@ public class SpotifyArtistDetailFragment extends Fragment {
 
                 SpotifyArtistSong artistSong = mArtistSongAdapter.getItem(position);
 
-                getToast( artistSong.previewURL );
+                getToast(artistSong.previewURL);
 
                 /*Intent intent = new Intent(getActivity(), SpotifyArtistDetail.class)
                         .putExtra("artist", artist);
@@ -137,7 +139,10 @@ public class SpotifyArtistDetailFragment extends Fragment {
 
             //Log.d(LOG_TAG, "Looking for Artists with the name: " + artistName);
             Map<String, Object> queryParams = new HashMap<String, Object>();
-            queryParams.put("country","US");
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String location = prefs.getString(getString(R.string.country_code_key),
+                    getString(R.string.pref_country_code_default));
+            queryParams.put("country",location);
             Tracks tracks = spotify.getArtistTopTrack(artistSpotifyId, queryParams);
 
             if( artistSongs != null ) {
@@ -159,10 +164,13 @@ public class SpotifyArtistDetailFragment extends Fragment {
                     if(albumSimple.images != null && !albumSimple.images.isEmpty() ) {
 
                         int albumImageCount = albumSimple.images.size();
-                        if( albumImageCount > 1 ) {
 
-                            albumImageLarge = albumSimple.images.get(0).url;
+                        albumImageLarge = albumSimple.images.get(0).url;
+
+                        if( albumImageCount > 1 ) {
                             albumImageSmall = albumSimple.images.get(1).url;
+                        } else {
+                            albumImageSmall = albumImageLarge;
                         }
                     }
 
