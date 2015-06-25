@@ -1,10 +1,13 @@
-package com.jaygietl.android.spotifystreamer;
+package com.jaygietl.android.spotifystreamer.fragment;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +20,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.jaygietl.android.spotifystreamer.R;
+import com.jaygietl.android.spotifystreamer.activity.SpotifyArtistDetail;
+import com.jaygietl.android.spotifystreamer.adapter.SpotifyArtistAdapter;
+import com.jaygietl.android.spotifystreamer.model.SpotifyArtist;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +33,7 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Image;
+import retrofit.RetrofitError;
 
 
 /**
@@ -85,7 +94,12 @@ public class ArtistSearchFragment extends Fragment {
                                     .getApplicationWindowToken(),
                             InputMethodManager.HIDE_NOT_ALWAYS);
                     mSearchString = mEdit.getText().toString();
-                    doArtistSearch();
+                    if( isNetworkAvailable() ) {
+                        doArtistSearch();
+                    } else {
+                        getToast(getResources().getString(R.string.connection_error));
+                    }
+
                     handled = true;
 
                 }
@@ -112,6 +126,14 @@ public class ArtistSearchFragment extends Fragment {
         });
 
         return rootView;
+    }
+
+    //Based on a stackoverflow snippet
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
     private void setupAdapter() {
@@ -153,34 +175,39 @@ public class ArtistSearchFragment extends Fragment {
 
             final String artistName = params[0];
 
-            //Log.d(LOG_TAG, "Looking for Artists with the name: " + artistName);
-            ArtistsPager artistsPager = spotify.searchArtists(artistName);
+            try {
+                ArtistsPager artistsPager = spotify.searchArtists(artistName);
 
-            if( mArtistDetails != null ) {
-                mArtistDetails.clear();
-            } else {
-                mArtistDetails = new ArrayList<SpotifyArtist>();
-            }
-
-            if( artistsPager.artists != null && !artistsPager.artists.items.isEmpty() ) {
-
-                for( Artist artist : artistsPager.artists.items ) {
-
-                    List<Image> artistImages = artist.images;
-                    String thumbImageUrl = "";
-                    for( Image image : artistImages ) {
-                        if( image.width.equals(64) ) {
-                            thumbImageUrl = image.url;
-                        }
-                    }
-
-                    SpotifyArtist artistDetail = new SpotifyArtist( artist.name, thumbImageUrl, artist.id );
-                    mArtistDetails.add(artistDetail);
-
-
+                if (mArtistDetails != null) {
+                    mArtistDetails.clear();
+                } else {
+                    mArtistDetails = new ArrayList<SpotifyArtist>();
                 }
 
-            } else {
+                if (artistsPager.artists != null && !artistsPager.artists.items.isEmpty()) {
+
+                    for (Artist artist : artistsPager.artists.items) {
+
+                        List<Image> artistImages = artist.images;
+                        String thumbImageUrl = "";
+                        for (Image image : artistImages) {
+                            if (image.width.equals(64)) {
+                                thumbImageUrl = image.url;
+                            }
+                        }
+
+                        SpotifyArtist artistDetail = new SpotifyArtist(artist.name, thumbImageUrl, artist.id);
+                        mArtistDetails.add(artistDetail);
+
+
+                    }
+
+                } else {
+                    return new ArrayList<>();
+                }
+            } catch (RetrofitError re) {
+                //Logging error for now, would like to show a message to the user instead
+                Log.e(LOG_TAG, re.getMessage());
                 return null;
             }
 
@@ -190,14 +217,23 @@ public class ArtistSearchFragment extends Fragment {
         @Override
         protected void onPostExecute(ArrayList<SpotifyArtist> result) {
 
-            if( result != null && !result.isEmpty() ) {
-                mArtistSearchAdapter.clear();
+            mArtistSearchAdapter.clear();
+
+            if( result == null ) {
+
+                getToast(getResources().getString(R.string.connection_error));
+
+            } else if( !result.isEmpty() ) {
+
                 for( SpotifyArtist artistDetail : result ) {
+
                     mArtistSearchAdapter.add(artistDetail);
+
                 }
+
             } else {
 
-                getToast("We didn't find anything that matched. Try something else.");
+                getToast("We didn't find anything that matched. Try again!");
 
             }
         }

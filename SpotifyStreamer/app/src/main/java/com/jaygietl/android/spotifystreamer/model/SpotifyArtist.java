@@ -1,4 +1,4 @@
-package com.jaygietl.android.spotifystreamer;
+package com.jaygietl.android.spotifystreamer.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;

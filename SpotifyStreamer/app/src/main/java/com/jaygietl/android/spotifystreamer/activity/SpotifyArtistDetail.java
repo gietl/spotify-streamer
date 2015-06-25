@@ -1,4 +1,4 @@
-package com.jaygietl.android.spotifystreamer;
+package com.jaygietl.android.spotifystreamer.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -6,6 +6,9 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.jaygietl.android.spotifystreamer.R;
+import com.jaygietl.android.spotifystreamer.model.SpotifyArtist;
 
 
 public class SpotifyArtistDetail extends ActionBarActivity {

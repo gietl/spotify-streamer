@@ -10,4 +10,6 @@
     <string name="country_code_key" transaltable="false">country_code</string>
     <string name="country_code_label">Country Code</string>
     <string name="pref_country_code_default" transaltable="false">US</string>
+
+    <string name="connection_error" transaltable="false">No connection available, please check and try again.</string>
 </resources>

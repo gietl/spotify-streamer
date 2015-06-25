@@ -1,18 +1,26 @@
-package com.jaygietl.android.spotifystreamer;
+package com.jaygietl.android.spotifystreamer.fragment;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import com.jaygietl.android.spotifystreamer.R;
+import com.jaygietl.android.spotifystreamer.model.SpotifyArtist;
+import com.jaygietl.android.spotifystreamer.model.SpotifyArtistSong;
+import com.jaygietl.android.spotifystreamer.adapter.SpotifyArtistSongAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +31,7 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.AlbumSimple;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
+import retrofit.RetrofitError;
 
 
 /**
@@ -57,8 +66,7 @@ public class SpotifyArtistDetailFragment extends Fragment {
         if( intent != null && intent.hasExtra("artist") ) {
 
             mArtist = intent.getParcelableExtra("artist");
-            /*((TextView) rootView.findViewById(R.id.detail_text))
-                    .setText(mArtist.spotifyId);*/
+
             doArtistTopSongSearch();
         }
 
@@ -116,6 +124,14 @@ public class SpotifyArtistDetailFragment extends Fragment {
         fetchArtistTopSongTask.execute(searchIdString);
     }
 
+    //Based on a stackoverflow snippet
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
+
     public class FetchArtistTopSongTask extends AsyncTask<String, Void, ArrayList<SpotifyArtistSong>> {
 
         private final String LOG_TAG = FetchArtistTopSongTask.class.getSimpleName();
@@ -143,48 +159,56 @@ public class SpotifyArtistDetailFragment extends Fragment {
             String location = prefs.getString(getString(R.string.country_code_key),
                     getString(R.string.pref_country_code_default));
             queryParams.put("country",location);
-            Tracks tracks = spotify.getArtistTopTrack(artistSpotifyId, queryParams);
 
-            if( artistSongs != null ) {
-                artistSongs.clear();
-            } else {
-                artistSongs = new ArrayList<SpotifyArtistSong>();
-            }
+            try {
+                Tracks tracks = spotify.getArtistTopTrack(artistSpotifyId, queryParams);
 
-            if ( tracks != null && tracks.tracks != null ) {
-
-                for ( Track track : tracks.tracks ) {
-                    AlbumSimple albumSimple = track.album;
-                    String trackPreviewUrl = track.preview_url;
-                    String trackName = track.name;
-                    String trackAlbum = albumSimple.name;
-                    String albumImageLarge = null;
-                    String albumImageSmall =  null;
-
-                    if(albumSimple.images != null && !albumSimple.images.isEmpty() ) {
-
-                        int albumImageCount = albumSimple.images.size();
-
-                        albumImageLarge = albumSimple.images.get(0).url;
-
-                        if( albumImageCount > 1 ) {
-                            albumImageSmall = albumSimple.images.get(1).url;
-                        } else {
-                            albumImageSmall = albumImageLarge;
-                        }
-                    }
-
-                    SpotifyArtistSong artistSong = new SpotifyArtistSong( trackName,
-                            trackAlbum,
-                            albumImageLarge,
-                            albumImageSmall,
-                            trackPreviewUrl);
-
-                    artistSongs.add(artistSong);
-
+                if (artistSongs != null) {
+                    artistSongs.clear();
+                } else {
+                    artistSongs = new ArrayList<SpotifyArtistSong>();
                 }
 
-            } else {
+                if (tracks != null && tracks.tracks != null) {
+
+                    for (Track track : tracks.tracks) {
+                        AlbumSimple albumSimple = track.album;
+                        String trackPreviewUrl = track.preview_url;
+                        String trackName = track.name;
+                        String trackAlbum = albumSimple.name;
+                        String albumImageLarge = null;
+                        String albumImageSmall = null;
+
+                        if (albumSimple.images != null && !albumSimple.images.isEmpty()) {
+
+                            int albumImageCount = albumSimple.images.size();
+
+                            albumImageLarge = albumSimple.images.get(0).url;
+
+                            if (albumImageCount > 1) {
+                                albumImageSmall = albumSimple.images.get(1).url;
+                            } else {
+                                albumImageSmall = albumImageLarge;
+                            }
+                        }
+
+                        SpotifyArtistSong artistSong = new SpotifyArtistSong(trackName,
+                                trackAlbum,
+                                albumImageLarge,
+                                albumImageSmall,
+                                trackPreviewUrl);
+
+                        artistSongs.add(artistSong);
+
+                    }
+
+                } else {
+                    return new ArrayList<>();
+                }
+            } catch (RetrofitError re) {
+
+                //Logging error for now, would like to show a message to the user instead
+                Log.e(LOG_TAG, re.getMessage());
                 return null;
             }
 
@@ -195,14 +219,21 @@ public class SpotifyArtistDetailFragment extends Fragment {
         @Override
         protected void onPostExecute(ArrayList<SpotifyArtistSong> result) {
 
-            if( result != null && !result.isEmpty() ) {
-                mArtistSongAdapter.clear();
+            mArtistSongAdapter.clear();
+
+            if( result == null ) {
+
+                getToast(getResources().getString(R.string.connection_error));
+
+            } else if( !result.isEmpty() ) {
+
                 for( SpotifyArtistSong artistSong : result ) {
                     mArtistSongAdapter.add(artistSong);
                 }
+
             } else {
 
-                getToast("We didn't find anything that matched. Go back and try another artist.");
+                getToast("We didn't find anything that matched. Go back and try again!");
 
             }
         }

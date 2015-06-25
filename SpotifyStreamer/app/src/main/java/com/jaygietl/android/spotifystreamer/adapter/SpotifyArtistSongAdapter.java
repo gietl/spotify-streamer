@@ -1,4 +1,4 @@
-package com.jaygietl.android.spotifystreamer;
+package com.jaygietl.android.spotifystreamer.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -8,6 +8,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.jaygietl.android.spotifystreamer.R;
+import com.jaygietl.android.spotifystreamer.model.SpotifyArtistSong;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
